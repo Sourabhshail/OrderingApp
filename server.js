@@ -21,7 +21,7 @@ app.use(cors(corsOptions));
 // parse requests of content-type - application/json
 app.use(express.json());
 
-db.sequelize.sync({ force: true, alter: true })
+db.sequelize.sync({ force: false, alter: true })
   .then(() => {
     console.log("Synced db.");
   })
