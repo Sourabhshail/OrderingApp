@@ -83,7 +83,7 @@ app.post("/placeorder", async (req, res) => {
   res.status(200).send({ "msg": "Order Placed Successfully, Your Order Id is : " + count });
 });
 
-// set port, listen for requests
+
 const PORT = 4000;
 
 http.listen(PORT, () => {
