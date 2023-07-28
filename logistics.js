@@ -29,7 +29,7 @@ subscriber.on('message', (channel, message) => {
 
         let data = JSON.parse(message)
         let destination = data.destination;
-        saveDataIntoLogistics(destination,data.orderId);
+        saveDataIntoLogistics(destination, data.orderId);
 
     }
 });
@@ -41,33 +41,40 @@ redisSubscriber.subscribe('order-shipment-channel', (err, count) => {
         console.error('Error subscribing to channel:', err);
     } else {
         redisSubscriber.on('message', async (channel, message) => {
-            console.log(`Received message from channel "${channel}": ${message}`);
             if (channel === 'order-shipment-channel') {
                 let order = JSON.parse(message);
                 let orderId = order.orderId;
-                const data = await Logistics.findOne({
-                    where: { "orderId": orderId },
-                    raw: true,
-                })
-                console.log("Result >>", data);
-                const redisPublisher = new Redis();
-                redisPublisher.publish('order-shipment-channel', JSON.stringify(data), (err, count) => {
-                    if (err) {
-                        console.error('Error publishing message:', err);
-                    } else {
-                        redisPublisher.quit();
-                    }
-                });
+                fetchShipmentStatus(orderId)
             }
         });
     }
 });
 
 
+async function fetchShipmentStatus(orderId) {
+    const data = await Logistics.findOne({
+        where: { "orderId": orderId },
+        raw: true,
+    })
+    console.log(data)
+    if (data) {
+        const redisPublisher = new Redis();
+        redisPublisher.publish('order-shipment-channel', JSON.stringify(data), (err, count) => {
+            if (err) {
+                console.error('Error publishing message:', err);
+            } else {
+                redisPublisher.quit();
+            }
+        });
+    }
 
-async function saveDataIntoLogistics(destination,orderId) {
+}
+
+
+
+async function saveDataIntoLogistics(destination, orderId) {
     const logisticsDetails = {
-        "orderId":orderId,
+        "orderId": orderId,
         "city": destination.city,
         "address": destination.address,
         "pin": destination.pin
@@ -76,7 +83,7 @@ async function saveDataIntoLogistics(destination,orderId) {
     Logistics.create(logisticsDetails)
         .then(data => {
             const redisPublisher = new Redis();
-            
+
             const message = JSON.stringify({ result: true });
             redisPublisher.publish(ORDER_LOGISTICS, message, (err, count) => {
                 if (err) {

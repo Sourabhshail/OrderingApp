@@ -99,47 +99,43 @@ io.on('connection', function (socket) {
   });
 
   socket.on('order-info-event', function (upvote_flag) {
-    console.log(upvote_flag)
-    const message = JSON.stringify({ upvote_flag });
     const redisSubscriber = new Redis();
     redisSubscriber.publish('order-history-channel', upvote_flag, (err, count) => {
       if (err) {
         console.error('Error subscribing to channel:', err);
       } else {
-        redisSubscriber.on('message', (channel, message) => {
+        redisSubscriber.subscribe('message', (channel, message) => {
           console.log(`Received message from channel "${channel}": ${message}`);
           if (channel === 'order-history-channel') {
-            socket.emit('order-info-status', JSON.parse(message));
+            io.emit('order-info-status', JSON.parse(message));
           }
           else {
-            redisPublisher.quit();
+            
           }
         });
       }
     });
-
-    io.emit('update-upvotes', upvote_flag);
   });
 
   socket.on('shipment-status-event', function (upvote_flag) {
-    console.log(upvote_flag)
+    
     const redisSubscriber = new Redis();
     redisSubscriber.publish('order-shipment-channel', upvote_flag, (err, count) => {
       if (err) {
         console.error('Error subscribing to channel:', err);
       } else {
-        redisSubscriber.on('message', (channel, message) => {
+        redisSubscriber.subscribe('message', (channel, message) => {
           console.log(`Received message from channel "${channel}": ${message}`);
           if (channel === 'order-shipment-channel') {
-            socket.emit('order-shipment-status', JSON.parse(message));
+            io.emit('order-shipment-status', JSON.parse(message));
           }
           else {
-            redisPublisher.quit();
+            
           }
         });
       }
     });
-    io.emit('update-upvotes', upvote_flag);
+   
   });
 
 });

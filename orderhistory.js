@@ -55,30 +55,37 @@ redisSubscriber.subscribe('order-history-channel', (err, count) => {
         console.error('Error subscribing to channel:', err);
     } else {
         redisSubscriber.on('message', async (channel, message) => {
-            console.log(`Received message from channel "${channel}": ${message}`);
             if (channel === 'order-history-channel') {
                 let order = JSON.parse(message);
+                console.log(order.orderId)
                 let orderId = order.orderId;
-                const data = await OrderHistory.findOne({
-                    where: { "orderId": orderId },
-                    raw: true,
-                })
-                console.log("Result >>", data);
-                const redisPublisher = new Redis();
-                redisPublisher.publish('order-history-channel', JSON.stringify(data), (err, count) => {
-                    if (err) {
-                        console.error('Error publishing message:', err);
-                    } else {
-                        redisPublisher.quit();
-                    }
-                });
+                fetchOrderInfo(orderId);
+
             }
         });
     }
 });
 
 
+async function fetchOrderInfo(orderId) {
 
+    const data = await OrderHistory.findOne({
+        where: { "orderId": orderId },
+        raw: true
+    })
+
+    if (data) {
+        const redisPublisher = new Redis();
+        redisPublisher.publish('order-history-channel', JSON.stringify(data), (err, count) => {
+            if (err) {
+                console.error('Error publishing message:', err);
+            } else {
+                console.log(JSON.stringify(data))
+            }
+        });
+    }
+
+}
 
 
 
